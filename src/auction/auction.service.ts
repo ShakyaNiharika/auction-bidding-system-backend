@@ -4,12 +4,14 @@ import { Model } from 'mongoose';
 import { Auction, AuctionStatus } from '../schemas/auction.schema';
 import { Bid } from '../schemas/bid.schema';
 import { User, UserRole } from '../schemas/user.schema';
+import { BiddingGateway } from './bidding.gateway';
 
 @Injectable()
 export class AuctionService {
     constructor(
         @InjectModel(Auction.name) private auctionModel: Model<Auction>,
         @InjectModel(Bid.name) private bidModel: Model<Bid>,
+        private readonly biddingGateway: BiddingGateway,
     ) { }
 
     async create(auctionData: any, user: any) {
@@ -102,6 +104,13 @@ export class AuctionService {
         // Update auction with new price
         auction.current_price = amount;
         await auction.save();
+
+        // Broadcast the new bid to all clients in the auction room
+        this.biddingGateway.broadcastNewBid(auctionId, {
+            auctionId,
+            current_price: amount,
+            bid: newBid,
+        });
 
         return newBid;
     }

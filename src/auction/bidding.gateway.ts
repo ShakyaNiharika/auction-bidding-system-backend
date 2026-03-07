@@ -51,6 +51,17 @@ export class BiddingGateway implements OnGatewayConnection, OnGatewayDisconnect 
         return { status: 'left', room };
     }
 
+    @SubscribeMessage('joinUserRoom')
+    handleJoinUserRoom(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() data: { userId: string },
+    ) {
+        const room = data.userId;
+        client.join(room);
+        this.logger.log(`Client ${client.id} joined user room ${room}`);
+        return { status: 'joined', room };
+    }
+
     // Helper method meant to be called from the AuctionService
     broadcastNewBid(auctionId: string, payload: any) {
         const room = `auction_${auctionId}`;

@@ -52,6 +52,12 @@ export class Auction extends Document {
 
     @Prop({ type: String, enum: AuctionStatus, default: AuctionStatus.ACTIVE })
     status: AuctionStatus;
+
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+    winner: User;
+
+    @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Bid' })
+    winning_bid: any; // Using any or importing Bid to avoid circular dep if necessary
 }
 
 export const AuctionSchema = SchemaFactory.createForClass(Auction);

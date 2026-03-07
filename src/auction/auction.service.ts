@@ -5,6 +5,8 @@ import { Auction, AuctionStatus } from '../schemas/auction.schema';
 import { Bid } from '../schemas/bid.schema';
 import { User, UserRole } from '../schemas/user.schema';
 import { BiddingGateway } from './bidding.gateway';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../schemas/notification.schema';
 
 @Injectable()
 export class AuctionService {
@@ -12,6 +14,7 @@ export class AuctionService {
         @InjectModel(Auction.name) private auctionModel: Model<Auction>,
         @InjectModel(Bid.name) private bidModel: Model<Bid>,
         private readonly biddingGateway: BiddingGateway,
+        private readonly notificationService: NotificationService,
     ) { }
 
     async create(auctionData: any, user: any) {
@@ -62,6 +65,7 @@ export class AuctionService {
         const auction = await this.auctionModel
             .findById(id)
             .populate('seller', 'username first_name last_name')
+            .populate('winner', 'username first_name last_name email')
             .exec();
 
         if (!auction) {
@@ -101,9 +105,43 @@ export class AuctionService {
 
         await newBid.save();
 
-        // Update auction with new price
-        auction.current_price = amount;
-        await auction.save();
+        // Get the previous highest bidder to notify them
+        const previousHighestBid = await this.bidModel
+            .findOne({ auction: auctionId, _id: { $ne: newBid._id } })
+            .sort({ amount: -1 })
+            .exec();
+
+        if (previousHighestBid && previousHighestBid.bidder.toString() !== bidderId) {
+            try {
+                await this.notificationService.create(
+                    previousHighestBid.bidder.toString(),
+                    NotificationType.OUTBID,
+                    `You have been outbid on "${auction.title}". The new price is Rs. ${amount}.`,
+                    auctionId,
+                );
+            } catch (error) {
+                console.error('Failed to send outbid notification:', error);
+            }
+        }
+
+        // Atomically update auction with new price ONLY if it's still active and end_time hasn't passed
+        const updatedAuction = await this.auctionModel.findOneAndUpdate(
+            {
+                _id: auctionId,
+                status: AuctionStatus.ACTIVE,
+                end_time: { $gt: new Date() }
+            },
+            {
+                $set: { current_price: amount }
+            },
+            { new: true }
+        );
+
+        if (!updatedAuction) {
+            // If the auction was closed by a cron job in the millisecond between our check and update
+            await newBid.deleteOne(); // Roll back the bid
+            throw new BadRequestException('Auction has just ended');
+        }
 
         // Broadcast the new bid to all clients in the auction room
         this.biddingGateway.broadcastNewBid(auctionId, {
@@ -174,5 +212,73 @@ export class AuctionService {
             ...p,
             auctionsInteracted: Array.from(p.auctionsInteracted)
         }));
+    }
+
+    async closeExpiredAuctions() {
+        const now = new Date();
+        const expiredAuctions = await this.auctionModel.find({
+            status: AuctionStatus.ACTIVE,
+            end_time: { $lte: now }
+        }).exec();
+
+        for (const auction of expiredAuctions) {
+            console.log(`Closing auction: ${auction._id} - ${auction.title}`);
+
+            // Find the highest bid for this auction
+            const highestBid = await this.bidModel
+                .findOne({ auction: auction._id })
+                .sort({ amount: -1 })
+                .populate('bidder', 'username first_name last_name email')
+                .exec();
+
+            if (highestBid) {
+                // Atomically mark as completed only if it is still ACTIVE
+                // This prevents multiple nodes/cron jobs from competing
+                const updated = await this.auctionModel.findOneAndUpdate(
+                    { _id: auction._id, status: AuctionStatus.ACTIVE },
+                    {
+                        $set: {
+                            status: AuctionStatus.COMPLETED,
+                            winner: highestBid.bidder,
+                            winning_bid: highestBid._id
+                        }
+                    },
+                    { new: true }
+                ).exec();
+
+                if (!updated) continue; // Already processed by someone else
+
+                // Notify the winner using the accurate bid amount
+                try {
+                    await this.notificationService.create(
+                        (highestBid.bidder as any)._id.toString(),
+                        NotificationType.WINNER,
+                        `Congratulations! You won the auction for "${auction.title}" with a bid of Rs. ${highestBid.amount}.`,
+                        (auction._id as any).toString(),
+                    );
+                } catch (error) {
+                    console.error('Failed to send winner notification:', error);
+                }
+
+                // Broadcast that the auction has ended
+                this.biddingGateway.server.to(`auction_${auction._id}`).emit('auctionEnded', {
+                    auctionId: auction._id,
+                    winner: highestBid.bidder,
+                    finalPrice: highestBid.amount,
+                });
+            } else {
+                // If no bids, just mark as completed
+                await this.auctionModel.findOneAndUpdate(
+                    { _id: auction._id, status: AuctionStatus.ACTIVE },
+                    { $set: { status: AuctionStatus.COMPLETED } }
+                ).exec();
+
+                this.biddingGateway.server.to(`auction_${auction._id}`).emit('auctionEnded', {
+                    auctionId: auction._id,
+                    winner: null,
+                    finalPrice: auction.starting_price,
+                });
+            }
+        }
     }
 }

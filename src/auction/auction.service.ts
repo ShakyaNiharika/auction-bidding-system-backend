@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { CreateAuctionDto } from './dto/create-auction.dto';
+import { UpdateAuctionDto } from './dto/update-auction.dto';
+import { AuctionQueryDto } from './dto/auction-query.dto';
 import { Auction, AuctionStatus } from '../schemas/auction.schema';
 import { Bid } from '../schemas/bid.schema';
 import { User, UserRole } from '../schemas/user.schema';
@@ -26,17 +29,24 @@ export class AuctionService {
         const newAuction = new this.auctionModel({
             ...auctionData,
             seller: user.id,
-            status: AuctionStatus.ACTIVE, // Default to active for now
+            variety: auctionData.variety,
+            status: AuctionStatus.ACTIVE, 
         });
 
         return await newAuction.save();
     }
 
-    async findAll(query?: any) {
-        const { keyword, page = 1, limit = 10 } = query || {};
+    async findAll(query?: AuctionQueryDto) {
+        const { keyword, page = 1, limit = 10, variety, status } = query || {};
         const skip = (page - 1) * limit;
 
-        const filter: any = { status: AuctionStatus.ACTIVE };
+        const filter: any = {};
+        if (status) {
+            filter.status = status;
+        }
+        if (variety) {
+            filter.variety = variety;
+        }
         if (keyword) {
             filter.$or = [
                 { title: { $regex: keyword, $options: 'i' } },

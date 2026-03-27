@@ -43,5 +43,11 @@ export class CreateAuctionDto {
 
     @ApiProperty({ example: '2026-02-15T18:00:00Z', description: 'When bidding ends' })
     @IsDateString()
+    @IsNotEmpty()
     end_time: string;
+
+    @ApiProperty({ example: 'CO 0238', description: 'Sugarcane variety', required: false })
+    @IsString()
+    @IsOptional()
+    variety?: string;
 }

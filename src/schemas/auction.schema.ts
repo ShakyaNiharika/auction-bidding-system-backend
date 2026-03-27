@@ -57,7 +57,10 @@ export class Auction extends Document {
     winner: User;
 
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Bid' })
-    winning_bid: any; // Using any or importing Bid to avoid circular dep if necessary
+    winning_bid: any; 
+
+    @Prop({ required: false })
+    variety: string;
 }
 
 export const AuctionSchema = SchemaFactory.createForClass(Auction);

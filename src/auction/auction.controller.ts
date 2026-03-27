@@ -5,6 +5,7 @@ import { AuctionService } from './auction.service';
 import { CreateAuctionDto } from './dto/create-auction.dto';
 import { UpdateAuctionDto } from './dto/update-auction.dto';
 import { CreateBidDto } from './dto/create-bid.dto';
+import { AuctionQueryDto } from './dto/auction-query.dto';
 
 @ApiTags('auctions')
 @Controller('auctions')
@@ -22,7 +23,7 @@ export class AuctionController {
 
     @Get()
     @ApiOperation({ summary: 'Get all active auctions with filters' })
-    async findAll(@Query() query: any) {
+    async findAll(@Query() query: AuctionQueryDto) {
         return this.auctionService.findAll(query);
     }
 

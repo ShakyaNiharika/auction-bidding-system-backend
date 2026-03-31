@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Request, Patch, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
@@ -15,6 +15,15 @@ export class UserController {
     @ApiResponse({ status: 200, description: 'Return current user profile' })
     async getProfile(@Request() req) {
         return this.userService.findOne(req.user.id);
+    }
+
+    @Patch('profile')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update current user profile' })
+    @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+    async updateProfile(@Request() req, @Body() updateData: any) {
+        return this.userService.update(req.user.id, updateData);
     }
 
     @Get()

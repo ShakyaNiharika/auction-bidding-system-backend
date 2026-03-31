@@ -18,4 +18,17 @@ export class UserService {
         }
         return user;
     }
+
+    async update(id: string, updateData: Partial<User>) {
+        const user = await this.userModel.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true }
+        ).select('-password_hash').exec();
+
+        if (!user) {
+            throw new NotFoundException(`User #${id} not found`);
+        }
+        return user;
+    }
 }

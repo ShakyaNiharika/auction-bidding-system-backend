@@ -50,4 +50,8 @@ export class CreateAuctionDto {
     @IsString()
     @IsOptional()
     variety?: string;
+
+    @ApiProperty({ example: ['/uploads/img1.jpg'], description: 'Array of image URLs', required: false })
+    @IsOptional()
+    images?: string[];
 }

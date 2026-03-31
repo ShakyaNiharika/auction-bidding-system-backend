@@ -35,6 +35,9 @@ export class User extends Document {
 
     @Prop({ type: String, enum: UserRole, default: UserRole.BUYER })
     role: UserRole;
+
+    @Prop()
+    profile_picture: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

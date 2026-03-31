@@ -71,6 +71,32 @@ export class AuctionService {
             .exec();
     }
 
+    async findMyBids(userId: string) {
+        // Find all bids by this user
+        const bids = await this.bidModel
+            .find({ bidder: userId })
+            .populate({
+                path: 'auction',
+                populate: { path: 'variety' }
+            })
+            .sort({ createdAt: -1 })
+            .exec();
+
+        // Group by auction to avoid duplicates
+        const uniqueAuctions = new Map();
+        bids.forEach(bid => {
+            if (bid.auction && !uniqueAuctions.has((bid.auction as any)._id.toString())) {
+                uniqueAuctions.set((bid.auction as any)._id.toString(), {
+                    auction: bid.auction,
+                    myLastBid: bid.amount,
+                    bidTime: bid.bid_time
+                });
+            }
+        });
+
+        return Array.from(uniqueAuctions.values());
+    }
+
     async findOne(id: string) {
         const auction = await this.auctionModel
             .findById(id)

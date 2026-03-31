@@ -8,6 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { AuctionModule } from './auction/auction.module';
 import { NotificationModule } from './notification/notification.module';
+import { PaymentModule } from './payment/payment.module';
+import { UploadModule } from './upload/upload.module';
+import { VarietyModule } from './variety/variety.module';
 
 @Module({
   imports: [
@@ -26,6 +29,9 @@ import { NotificationModule } from './notification/notification.module';
     UserModule,
     AuctionModule,
     NotificationModule,
+    PaymentModule,
+    UploadModule,
+    VarietyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

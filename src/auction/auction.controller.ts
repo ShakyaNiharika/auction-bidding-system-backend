@@ -35,6 +35,14 @@ export class AuctionController {
         return this.auctionService.findMyAuctions(req.user.id);
     }
 
+    @Get('buyer/me')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get auctions where the current buyer has bid' })
+    async findMyBids(@Request() req) {
+        return this.auctionService.findMyBids(req.user.id);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Get auction details by ID' })
     async findOne(@Param('id') id: string) {

@@ -9,6 +9,12 @@ export enum AuctionStatus {
     CANCELLED = 'cancelled',
 }
 
+export enum PaymentStatus {
+    PENDING = 'pending',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+}
+
 export enum WeightUnit {
     TONS = 'tons',
     KG = 'kg',
@@ -59,8 +65,14 @@ export class Auction extends Document {
     @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Bid' })
     winning_bid: any; 
 
+    @Prop({ type: [String], default: [] })
+    images: string[];
+
     @Prop({ required: false })
     variety: string;
+
+    @Prop({ type: String, enum: PaymentStatus, default: PaymentStatus.PENDING })
+    payment_status: PaymentStatus;
 }
 
 export const AuctionSchema = SchemaFactory.createForClass(Auction);

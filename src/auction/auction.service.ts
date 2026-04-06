@@ -192,7 +192,7 @@ export class AuctionService {
     async update(id: string, updateAuctionDto: any, user: any) {
         const auction = await this.findOne(id);
 
-        if (auction.seller['_id'].toString() !== user.id) {
+        if (user.role !== UserRole.ADMIN && auction.seller['_id'].toString() !== user.id) {
             throw new BadRequestException('You can only update your own auctions');
         }
 
@@ -203,7 +203,7 @@ export class AuctionService {
     async remove(id: string, user: any) {
         const auction = await this.findOne(id);
 
-        if (auction.seller['_id'].toString() !== user.id) {
+        if (user.role !== UserRole.ADMIN && auction.seller['_id'].toString() !== user.id) {
             throw new BadRequestException('You can only delete your own auctions');
         }
 
@@ -215,6 +215,18 @@ export class AuctionService {
         const auctions = await this.auctionModel.find({ seller: sellerId }).select('_id');
         const auctionIds = auctions.map(a => a._id);
 
+        return this.getBiddersForAuctions(auctionIds);
+    }
+
+    async getAllParticipants() {
+        // Admin gets all bidders across all auctions
+        const auctions = await this.auctionModel.find().select('_id');
+        const auctionIds = auctions.map(a => a._id);
+
+        return this.getBiddersForAuctions(auctionIds);
+    }
+
+    private async getBiddersForAuctions(auctionIds: any[]) {
         // Find all bids for these auctions
         const bids = await this.bidModel
             .find({ auction: { $in: auctionIds } })
@@ -226,6 +238,7 @@ export class AuctionService {
         const participantsMap = new Map();
 
         bids.forEach(bid => {
+            if (!bid.bidder) return;
             const bidderId = (bid.bidder as any)._id.toString();
             if (!participantsMap.has(bidderId)) {
                 participantsMap.set(bidderId, {

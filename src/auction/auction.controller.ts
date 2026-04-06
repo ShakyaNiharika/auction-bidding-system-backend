@@ -76,10 +76,18 @@ export class AuctionController {
     @Get('stats/overview')
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
-    @ApiOperation({ summary: 'Get overview stats for seller dashboard' })
+    @ApiOperation({ summary: 'Get overview stats for dashboard (Global for Admin, Personal for Seller)' })
     async getStats(@Request() req) {
-        const auctions = await this.auctionService.findMyAuctions(req.user.id);
-        const participants = await this.auctionService.getParticipants(req.user.id);
+        let auctions;
+        let participants;
+
+        if (req.user.role === 'admin') {
+            auctions = await this.auctionService.findAll();
+            participants = await this.auctionService.getAllParticipants(); 
+        } else {
+            auctions = await this.auctionService.findMyAuctions(req.user.id);
+            participants = await this.auctionService.getParticipants(req.user.id);
+        }
 
         return {
             activeAuctions: auctions.filter(a => a.status === 'active').length,

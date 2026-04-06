@@ -1,7 +1,10 @@
-import { Controller, Get, Param, UseGuards, Request, Patch, Body } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Request, Patch, Body, Delete } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { UserRole } from '../schemas/user.schema';
 
 @ApiTags('users')
 @Controller('users')
@@ -27,17 +30,32 @@ export class UserController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Get all users' })
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all users (Admin only)' })
     @ApiResponse({ status: 200, description: 'Return all users' })
     async findAll() {
         return this.userService.findAll();
     }
 
     @Get(':id')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Get user by ID' })
     @ApiResponse({ status: 200, description: 'Return user details' })
     @ApiResponse({ status: 404, description: 'User not found' })
     async findOne(@Param('id') id: string) {
         return this.userService.findOne(id);
+    }
+
+    @Delete(':id')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Delete user by ID (Admin only)' })
+    @ApiResponse({ status: 200, description: 'User deleted' })
+    async remove(@Param('id') id: string) {
+        return this.userService.remove(id);
     }
 }

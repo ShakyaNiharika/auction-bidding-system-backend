@@ -11,6 +11,7 @@ import { NotificationModule } from './notification/notification.module';
 import { PaymentModule } from './payment/payment.module';
 import { UploadModule } from './upload/upload.module';
 import { VarietyModule } from './variety/variety.module';
+import { InquiryModule } from './inquiry/inquiry.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { VarietyModule } from './variety/variety.module';
     PaymentModule,
     UploadModule,
     VarietyModule,
+    InquiryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

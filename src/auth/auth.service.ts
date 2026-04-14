@@ -57,6 +57,39 @@ export class AuthService {
         }
 
         // Generate JWT
+        return this.generateToken(user);
+    }
+
+    async validateGoogleUser(googleUser: any) {
+        const { email, googleId, firstName, lastName, picture } = googleUser;
+
+        let user = await this.userModel.findOne({ $or: [{ googleId }, { email }] });
+
+        if (!user) {
+            // Create new user if they don't exist
+            user = new this.userModel({
+                email,
+                googleId,
+                first_name: firstName,
+                last_name: lastName,
+                username: email.split('@')[0] + Math.floor(Math.random() * 1000), // Generate a random username
+                profile_picture: picture,
+                role: 'buyer', // Default role
+            });
+            await user.save();
+        } else if (!user.googleId) {
+            // If user exists with email but no googleId, link them
+            user.googleId = googleId;
+            if (picture && !user.profile_picture) {
+                user.profile_picture = picture;
+            }
+            await user.save();
+        }
+
+        return this.generateToken(user);
+    }
+
+    private async generateToken(user: any) {
         const payload = { sub: user._id, email: user.email, role: user.role };
         return {
             access_token: await this.jwtService.signAsync(payload),

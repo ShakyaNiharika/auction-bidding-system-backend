@@ -12,11 +12,11 @@ export class User extends Document {
     @Prop({ required: true, unique: true })
     email: string;
 
-    @Prop({ required: true, unique: true })
+    @Prop({ unique: true, sparse: true })
     username: string;
 
-    @Prop({ required: true })
-    password_hash: string;
+    @Prop({ required: false })
+    password_hash?: string;
 
     @Prop({ required: true })
     first_name: string;
@@ -24,20 +24,23 @@ export class User extends Document {
     @Prop({ required: true })
     last_name: string;
 
-    @Prop({ required: true })
-    phone_number: string;
+    @Prop({ required: false })
+    phone_number?: string;
 
     @Prop()
-    address: string;
+    address?: string;
 
     @Prop()
-    date_of_birth: Date;
+    date_of_birth?: Date;
 
     @Prop({ type: String, enum: UserRole, default: UserRole.BUYER })
     role: UserRole;
 
     @Prop()
-    profile_picture: string;
+    profile_picture?: string;
+
+    @Prop({ unique: true, sparse: true })
+    googleId?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

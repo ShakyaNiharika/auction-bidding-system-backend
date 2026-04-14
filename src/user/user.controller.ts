@@ -58,4 +58,14 @@ export class UserController {
     async remove(@Param('id') id: string) {
         return this.userService.remove(id);
     }
+
+    @Patch(':id')
+    @UseGuards(AuthGuard('jwt'), RolesGuard)
+    @Roles(UserRole.ADMIN)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update user by ID (Admin only)' })
+    @ApiResponse({ status: 200, description: 'User updated successfully' })
+    async updateAdmin(@Param('id') id: string, @Body() updateData: any) {
+        return this.userService.update(id, updateData);
+    }
 }

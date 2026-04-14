@@ -1,13 +1,19 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
+import type { Response } from 'express';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+    constructor(
+        private authService: AuthService,
+        private configService: ConfigService,
+    ) { }
 
     @Post('register')
     @ApiOperation({ summary: 'Register a new user' })
@@ -25,5 +31,27 @@ export class AuthController {
     @ApiResponse({ status: 401, description: 'Invalid credentials' })
     async login(@Body() loginData: LoginDto) {
         return this.authService.login(loginData);
+    }
+
+    @Get('google')
+    @UseGuards(AuthGuard('google'))
+    @ApiOperation({ summary: 'Initiate Google SSO login' })
+    async googleAuth(@Req() req) {
+        // Initiates the Google OAuth2 login flow
+    }
+
+    @Get('google/callback')
+    @UseGuards(AuthGuard('google'))
+    @ApiOperation({ summary: 'Google SSO callback' })
+    async googleAuthRedirect(@Req() req, @Res() res: Response) {
+        const result = await this.authService.validateGoogleUser(req.user);
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+
+        // Redirect to frontend with token and user data in query params (or handle via cookies)
+        // For simplicity, we'll use query params which the frontend will then store
+        const token = result.access_token;
+        const user = encodeURIComponent(JSON.stringify(result.user));
+
+        return res.redirect(`${frontendUrl}/auth/sso-callback?token=${token}&user=${user}`);
     }
 }

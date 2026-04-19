@@ -210,6 +210,14 @@ export class AuctionService {
         return await this.auctionModel.findByIdAndDelete(id).exec();
     }
 
+    async getAuctionBids(auctionId: string) {
+        return await this.bidModel
+            .find({ auction: auctionId })
+            .populate('bidder', 'username email first_name last_name')
+            .sort({ amount: -1 })
+            .exec();
+    }
+
     async getParticipants(sellerId: string) {
         // Find all auctions by this seller
         const auctions = await this.auctionModel.find({ seller: sellerId }).select('_id');

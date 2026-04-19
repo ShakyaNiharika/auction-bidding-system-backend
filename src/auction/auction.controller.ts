@@ -43,28 +43,6 @@ export class AuctionController {
         return this.auctionService.findMyBids(req.user.id);
     }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get auction details by ID' })
-    async findOne(@Param('id') id: string) {
-        return this.auctionService.findOne(id);
-    }
-
-    @Patch(':id')
-    @UseGuards(AuthGuard('jwt'))
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Update an auction (Owner only)' })
-    async update(@Param('id') id: string, @Body() updateAuctionDto: UpdateAuctionDto, @Request() req) {
-        return this.auctionService.update(id, updateAuctionDto, req.user);
-    }
-
-    @Delete(':id')
-    @UseGuards(AuthGuard('jwt'))
-    @ApiBearerAuth()
-    @ApiOperation({ summary: 'Delete an auction (Owner only)' })
-    async remove(@Param('id') id: string, @Request() req) {
-        return this.auctionService.remove(id, req.user);
-    }
-
     @Get('participants')
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()
@@ -95,6 +73,36 @@ export class AuctionController {
             totalParticipants: participants.length,
             recentActivity: auctions.slice(0, 5)
         };
+    }
+
+    @Get(':id/bids')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get all bids for a specific auction' })
+    async getBids(@Param('id') id: string) {
+        return this.auctionService.getAuctionBids(id);
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Get auction details by ID' })
+    async findOne(@Param('id') id: string) {
+        return this.auctionService.findOne(id);
+    }
+
+    @Patch(':id')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Update an auction (Owner only)' })
+    async update(@Param('id') id: string, @Body() updateAuctionDto: UpdateAuctionDto, @Request() req) {
+        return this.auctionService.update(id, updateAuctionDto, req.user);
+    }
+
+    @Delete(':id')
+    @UseGuards(AuthGuard('jwt'))
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Delete an auction (Owner only)' })
+    async remove(@Param('id') id: string, @Request() req) {
+        return this.auctionService.remove(id, req.user);
     }
 
     @Post(':id/bids')

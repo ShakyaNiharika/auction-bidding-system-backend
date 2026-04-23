@@ -11,6 +11,13 @@ import { UserRole } from '../schemas/user.schema';
 export class UserController {
     constructor(private readonly userService: UserService) { }
 
+    @Get('stats')
+    @ApiOperation({ summary: 'Get public user statistics' })
+    @ApiResponse({ status: 200, description: 'Return counts of farmers and mills' })
+    async getStats() {
+        return this.userService.getPublicStats();
+    }
+
     @Get('profile')
     @UseGuards(AuthGuard('jwt'))
     @ApiBearerAuth()

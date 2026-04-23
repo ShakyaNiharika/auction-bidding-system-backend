@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../schemas/user.schema';
+import { User, UserRole } from '../schemas/user.schema';
 
 @Injectable()
 export class UserService {
@@ -37,5 +37,14 @@ export class UserService {
             throw new NotFoundException(`User #${id} not found`);
         }
         return { deleted: true };
+    }
+
+    async getPublicStats() {
+        const farmerCount = await this.userModel.countDocuments({ role: UserRole.SELLER });
+        const millCount = await this.userModel.countDocuments({ role: UserRole.BUYER });
+        return {
+            farmers: farmerCount,
+            mills: millCount
+        };
     }
 }
